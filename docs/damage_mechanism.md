@@ -122,41 +122,58 @@ These powerful stats can be found on various items, talents, and support gems. L
 
 **Scenario / 情景:**
 - Attacker uses **Fireball**.
+  攻击者使用**火球**。
 - Fireball's Level provides:
+  火球等级提供：
     - **Skill's Flat Damage**: 80
+      **技能固定伤害**: 80
     - **Damage Effectiveness**: 60%
+      **伤害效用**: 60%
 - Attacker Stats:
+  攻击者属性：
     - `WeaponDamage` Stat: 100
+      `武器伤害`属性: 100
     - `Critical Hit Chance`: 40%
+      `暴击几率`: 40%
     - `Critical Damage`: 180% (1.8x multiplier)
+      `暴击伤害`: 180% (1.8倍乘数)
     - `+25 Fire Damage` (Flat)
+      `+25 火焰伤害` (固定)
     - `+50% Increased Fire Damage`
+      `+50% 火焰伤害增加`
     - `+20% Increased Spell Damage`
+      `+20% 法术伤害增加`
     - `20% More Fire Damage` (More)
+      `20% 更多火焰伤害` (更多)
 - Target Stats:
+  目标属性：
     - `20% Fire Damage Reduction`
+      `20% 火焰伤害减免`
 
 **Calculation Steps / 计算步骤:**
 
-1.  **Calculate Initial Skill Damage (Base Damage)**:
+1.  **Calculate Initial Skill Damage (Base Damage) / 计算初始技能伤害 (基础伤害)**:
     - `Initial Damage = (Skill's Flat Damage) + (WeaponDamage * Damage Effectiveness)`
+      `初始伤害 = (技能固定伤害) + (武器伤害 * 伤害效用)`
     - `Initial Damage = 80 + (100 * 0.60) = 80 + 60 = 140`
     - The "Base Damage" for our pipeline is **140**.
+      我们计算流程的“基础伤害”是 **140**。
 
-2.  **Hit & Crit Check**:
+2.  **Hit & Crit Check / 命中与暴击检查**:
     - Let's assume the attack **hits** and is a **critical strike**.
+      我们假设这次攻击**命中**并且是**暴击**。
 
-3.  **Detailed Damage Calculation**:
-    - **Base + Flat Damage**:
+3.  **Detailed Damage Calculation / 详细伤害计算**:
+    - **Base + Flat Damage / 基础 + 固定伤害**:
         - `140 (Base) + 25 (Flat) = 165`
-    - **Increased Damage**: Fireball has "Fire" and "Spell" tags.
-        - `50% (Fire) + 20% (Spell) = 70% Increased Damage`
+    - **Increased Damage / 伤害增加**: Fireball has "Fire" and "Spell" tags. / 火球拥有“火焰”和“法术”标签。
+        - `50% (Fire) + 20% (Spell) = 70% Increased Damage` / `50% (火焰) + 20% (法术) = 70% 伤害增加`
         - `165 * (1 + 0.70) = 165 * 1.7 = 280.5`
-    - **More Damage**:
+    - **More Damage / 更多伤害**:
         - `280.5 * 1.20 = 336.6`
-    - **Critical Damage**: Apply the 1.8x multiplier.
+    - **Critical Damage / 暴击伤害**: Apply the 1.8x multiplier. / 应用 1.8 倍乘数。
         - `336.6 * 1.8 = 605.88`
-    - **Enemy Defenses**:
+    - **Enemy Defenses / 敌人防御**:
         - `605.88 * (1 - 0.20) = 484.7`
 
 The final damage dealt is **~485**.
