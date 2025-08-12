@@ -72,6 +72,76 @@ You can add bonus elemental damage to your attacks using stats like "+X Fire Dam
 
 For each bonus element, a new `DamageEvent` is created and its damage is calculated independently. The final damage is the sum of the main damage and all bonus elemental damages.
 
+## Detailed Damage Calculation Formula
+
+The final damage is calculated through a pipeline where the base damage is modified by several layers of stats. Here is a simplified formula:
+
+`Final Damage = (Base Damage + Flat Damage) * (1 + Σ Increased Damage %) * (Π More Damage Multipliers) * (1 - Damage Reduction)`
+
+Where:
+- `Σ` (Sigma) represents the sum of all applicable "Increased Damage" modifiers.
+- `Π` (Pi) represents the product of all applicable "More Damage" modifiers.
+
+### Damage Calculation Pipeline (The "Buckets" / "乘区")
+
+1.  **Base Damage**: The starting damage of a skill or attack before any modifications.
+2.  **Flat Damage**: All sources of "+X Damage" are added directly to the Base Damage. This happens before any percentage-based modifiers.
+3.  **Damage Conversion**: A percentage of damage can be converted from one element to another (e.g., "50% of Physical Damage Converted to Fire Damage"). This happens *after* Flat Damage is added. The converted portion of the damage will then be scaled by the new element's damage modifiers, not the original one's.
+4.  **Increased Damage (Additive)**: All stats with "Increased Damage" (e.g., "+20% Fire Damage", "+30% Melee Damage") are added together into a single large multiplier. This is one "bucket".
+5.  **More Damage (Multiplicative)**: Each stat with "More Damage" (e.g., "20% More Physical Damage") is its own separate multiplier. They are all multiplied together. This forms another "bucket".
+6.  **Enemy Defenses**: Finally, the target's resistances and damage reduction stats are applied to reduce the incoming damage.
+
+### Calculation Example
+
+Let's walk through an example.
+
+**Scenario:**
+- A player attacks with a sword, dealing **100 base Physical Damage**.
+- The player has the following stats:
+    - `+20 Physical Damage` (Flat Damage)
+    - `+50% Increased Physical Damage`
+    - `+30% Increased Melee Damage`
+    - `20% More Physical Damage` (More Damage)
+    - `50% of Physical Damage Converted to Fire Damage`
+    - `+40% Increased Fire Damage`
+- The target has:
+    - `10% Physical Damage Reduction`
+    - `20% Fire Damage Reduction`
+
+**Calculation:**
+
+1.  **Apply Flat Damage**:
+    - The base damage is increased by the flat damage stat.
+    - `100 (Base) + 20 (Flat) = 120 Physical Damage`
+
+2.  **Apply Damage Conversion**:
+    - 50% of the 120 Physical damage is converted to Fire damage.
+    - `120 * 0.50 = 60` damage is converted to Fire.
+    - `120 * 0.50 = 60` damage remains Physical.
+    - We now have two separate damage instances to calculate: **60 Physical Damage** and **60 Fire Damage**.
+
+3.  **Calculate the Physical Damage Instance**:
+    - **Increased Damage**: We sum all applicable "Increased Damage" modifiers. Both "Increased Physical Damage" and "Increased Melee Damage" apply.
+    - `50% + 30% = 80% Increased Physical Damage`.
+    - `60 * (1 + 0.80) = 108`
+    - **More Damage**: Apply the "More Physical Damage" multiplier.
+    - `108 * 1.20 = 129.6`
+    - **Enemy Defenses**: Apply the target's Physical Damage Reduction.
+    - `129.6 * (1 - 0.10) = 116.64` (Final Physical Damage)
+
+4.  **Calculate the Fire Damage Instance**:
+    - **Increased Damage**: We sum all applicable "Increased Damage" modifiers. Both "Increased Fire Damage" and "Increased Melee Damage" apply to the converted portion.
+    - `40% + 30% = 70% Increased Fire Damage`.
+    - `60 * (1 + 0.70) = 102`
+    - **More Damage**: There are no "More Fire Damage" stats in this example.
+    - **Enemy Defenses**: Apply the target's Fire Damage Reduction.
+    - `102 * (1 - 0.20) = 81.6` (Final Fire Damage)
+
+5.  **Calculate Total Final Damage**:
+    - Sum the final damage from all instances.
+    - `116.64 (Physical) + 81.6 (Fire) = 198.24`
+    - The total damage dealt to the target is **198.24**.
+
 ---
 
 # 伤害机制
@@ -147,3 +217,73 @@ For each bonus element, a new `DamageEvent` is created and its damage is calcula
 您可以使用“+X 火焰伤害到攻击”等属性为您的攻击添加额外的元素伤害。此伤害在伤害转换后添加，并且不受原始元素伤害修饰符的影响。
 
 对于每个额外元素，都会创建一个新的 `DamageEvent` 并独立计算其伤害。最终伤害是主伤害和所有额外元素伤害的总和。
+
+## 详细伤害计算公式
+
+最终伤害是通过一个计算流程得出的，其中基础伤害会被多个属性层修改。这是一个简化的公式：
+
+`最终伤害 = (基础伤害 + 固定伤害) * (1 + Σ 伤害增加 %) * (Π 更多伤害乘数) * (1 - 伤害减免)`
+
+其中：
+- `Σ` (Sigma) 代表所有适用的“伤害增加”修饰符的总和。
+- `Π` (Pi) 代表所有适用的“更多伤害”修饰符的乘积。
+
+### 伤害计算流程 (乘区划分)
+
+1.  **基础伤害**: 技能或攻击在任何修改之前的初始伤害。
+2.  **固定伤害**: 所有“+X 伤害”的来源会直接加到基础伤害上。这在任何百分比修饰符之前发生。
+3.  **伤害转换**: 一定百分比的伤害可以从一种元素转换为另一种（例如，“50% 的物理伤害转换为火焰伤害”）。这在**固定伤害**被添加*之后*发生。伤害的转换部分将被新元素的伤害修饰符所缩放，而不是原始元素的。
+4.  **伤害增加 (加算)**: 所有带有“伤害增加”的属性（例如，“+20% 火焰伤害”、“+30% 近战伤害”）会先全部相加，形成一个大的乘数。这是一个“乘区”。
+5.  **更多伤害 (乘算)**: 每个带有“更多伤害”的属性（例如，“20% 更多物理伤害”）都是其自己的独立乘数。它们会全部相乘。这形成了另一个“乘区”。
+6.  **敌人防御**: 最后，目标的抗性和伤害减免属性会被应用来减少受到的伤害。
+
+### 计算示例
+
+让我们来看一个具体的例子。
+
+**情景:**
+- 一名玩家用剑攻击，造成 **100 点基础物理伤害**。
+- 该玩家拥有以下属性:
+    - `+20 物理伤害` (固定伤害)
+    - `+50% 物理伤害增加`
+    - `+30% 近战伤害增加`
+    - `20% 更多物理伤害` (更多伤害)
+    - `50% 的物理伤害转换为火焰伤害`
+    - `+40% 火焰伤害增加`
+- 目标拥有:
+    - `10% 物理伤害减免`
+    - `20% 火焰伤害减免`
+
+**计算过程:**
+
+1.  **应用固定伤害**:
+    - 基础伤害因固定伤害属性而增加。
+    - `100 (基础) + 20 (固定) = 120 物理伤害`
+
+2.  **应用伤害转换**:
+    - 120 点物理伤害中的 50% 被转换为火焰伤害。
+    - `120 * 0.50 = 60` 点伤害被转换为火焰。
+    - `120 * 0.50 = 60` 点伤害仍为物理。
+    - 现在我们有两个独立的伤害实例需要计算：**60 点物理伤害** 和 **60 点火焰伤害**。
+
+3.  **计算物理伤害实例**:
+    - **伤害增加**: 我们将所有适用的“伤害增加”修饰符相加。“物理伤害增加”和“近战伤害增加”都适用。
+    - `50% + 30% = 80% 物理伤害增加`。
+    - `60 * (1 + 0.80) = 108`
+    - **更多伤害**: 应用“更多物理伤害”乘数。
+    - `108 * 1.20 = 129.6`
+    - **敌人防御**: 应用目标的物理伤害减免。
+    - `129.6 * (1 - 0.10) = 116.64` (最终物理伤害)
+
+4.  **计算火焰伤害实例**:
+    - **伤害增加**: 我们将所有适用的“伤害增加”修饰符相加。“火焰伤害增加”和“近战伤害增加”都适用于转换后的部分。
+    - `40% + 30% = 70% 火焰伤害增加`。
+    - `60 * (1 + 0.70) = 102`
+    - **更多伤害**: 在此示例中没有“更多火焰伤害”的属性。
+    - **敌人防御**: 应用目标的火焰伤害减免。
+    - `102 * (1 - 0.20) = 81.6` (最终火焰伤害)
+
+5.  **计算最终总伤害**:
+    - 将所有实例的最终伤害相加。
+    - `116.64 (物理) + 81.6 (火焰) = 198.24`
+    - 对目标造成的总伤害为 **198.24**。
